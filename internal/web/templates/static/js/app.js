@@ -13,6 +13,7 @@ const DOWNLOAD_DIR_PRESET_VALUES = [
   "data/downloads",
   "downloads",
   "D:/Music/Downloads",
+  "/home/appuser/data",
   "/sdcard/Music",
   "/storage/emulated/0/Music",
   "/sdcard/Download",
@@ -20,7 +21,7 @@ const DOWNLOAD_DIR_PRESET_VALUES = [
 const DOWNLOAD_DIR_PRESETS = new Set(DOWNLOAD_DIR_PRESET_VALUES);
 const DEFAULT_UPDATE_REPO_URL = "https://github.com/guohuiyuan/go-music-dl";
 const DEFAULT_GITHUB_PROXY_URL = "https://edgeone.gh-proxy.com";
-const BATCH_DOWNLOAD_NOTICE_MS = 4200;
+const DEFAULT_DOWNLOAD_TIP_DURATION = 8;
 const OPEN_CONFIG_QUERY = "open_config";
 const GITHUB_PROXY_PRESETS = [
   "https://edgeone.gh-proxy.com",
@@ -39,6 +40,7 @@ let webSettings = {
   downloadToLocal: true,
   downloadDir: "data/downloads",
   downloadFilenameTemplate: "{name} - {artist}",
+  downloadTipDuration: DEFAULT_DOWNLOAD_TIP_DURATION,
   webdavEnabled: false,
   webdavUrl: "",
   webdavUsername: "",
@@ -65,6 +67,7 @@ function normalizeWebSettings(raw) {
     downloadToLocal: true,
     downloadDir: "data/downloads",
     downloadFilenameTemplate: "{name} - {artist}",
+    downloadTipDuration: DEFAULT_DOWNLOAD_TIP_DURATION,
     webdavEnabled: false,
     webdavUrl: "",
     webdavUsername: "",
@@ -100,6 +103,12 @@ function normalizeWebSettings(raw) {
     raw.downloadFilenameTemplate.trim() !== ""
   ) {
     next.downloadFilenameTemplate = raw.downloadFilenameTemplate.trim();
+  }
+  if (
+    Number.isInteger(raw.downloadTipDuration) &&
+    raw.downloadTipDuration > 0
+  ) {
+    next.downloadTipDuration = Math.min(raw.downloadTipDuration, 60);
   }
   if (typeof raw.webdavEnabled === "boolean") {
     next.webdavEnabled = raw.webdavEnabled;
@@ -180,6 +189,50 @@ function persistWebSettingsCache() {
   try {
     localStorage.setItem(WEB_SETTINGS_KEY, JSON.stringify(webSettings));
   } catch (_) {}
+}
+
+let activeSettingsTab = "general";
+
+function setSettingsTab(tabName) {
+  const tabs = Array.from(document.querySelectorAll("[data-settings-tab]"));
+  const panels = Array.from(document.querySelectorAll("[data-settings-panel]"));
+  if (!tabs.length || !panels.length) return;
+
+  const requested = String(tabName || "").trim();
+  const target = panels.some((panel) => panel.dataset.settingsPanel === requested)
+    ? requested
+    : "general";
+  activeSettingsTab = target;
+
+  tabs.forEach((tab) => {
+    const active = tab.dataset.settingsTab === target;
+    tab.classList.toggle("is-active", active);
+    tab.setAttribute("aria-selected", String(active));
+    tab.tabIndex = active ? 0 : -1;
+  });
+  panels.forEach((panel) => {
+    panel.hidden = panel.dataset.settingsPanel !== target;
+  });
+}
+
+function bindSettingsTabs() {
+  const tabs = Array.from(document.querySelectorAll("[data-settings-tab]"));
+  if (!tabs.length) return;
+
+  tabs.forEach((tab, index) => {
+    if (tab.dataset.bound === "1") return;
+    tab.dataset.bound = "1";
+    tab.addEventListener("click", () => setSettingsTab(tab.dataset.settingsTab));
+    tab.addEventListener("keydown", (event) => {
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+      event.preventDefault();
+      const offset = event.key === "ArrowRight" ? 1 : -1;
+      const next = tabs[(index + offset + tabs.length) % tabs.length];
+      next.focus();
+      setSettingsTab(next.dataset.settingsTab);
+    });
+  });
+  setSettingsTab(activeSettingsTab);
 }
 
 function applyVideoGenFeatureVisibility() {
@@ -336,6 +389,13 @@ function applyWebSettings(settings) {
   );
   if (filenameTemplateInput) {
     filenameTemplateInput.value = webSettings.downloadFilenameTemplate;
+  }
+
+  const downloadTipDurationInput = document.getElementById(
+    "setting-download-tip-duration",
+  );
+  if (downloadTipDurationInput) {
+    downloadTipDurationInput.value = String(webSettings.downloadTipDuration);
   }
 
   const floatingLyricsToggle = document.getElementById(
@@ -738,6 +798,13 @@ function buildBatchFailureMessage(failures, title) {
   return message;
 }
 
+function downloadNoticeDuration() {
+  const seconds = Number(webSettings.downloadTipDuration);
+  return (Number.isFinite(seconds) && seconds > 0
+    ? Math.min(seconds, 60)
+    : DEFAULT_DOWNLOAD_TIP_DURATION) * 1000;
+}
+
 function showToast(title, message = "", type = "info", duration = 0) {
   let container = document.getElementById("app-toast-container");
   if (!container) {
@@ -870,10 +937,20 @@ async function handleDownloadClick(link) {
       message += `\nWebDAV: ${data.webdav_error}`;
       warning = true;
     }
-    showToast("下载完成", message, warning ? "warning" : "success", 0);
+    showToast(
+      "下载完成",
+      message,
+      warning ? "warning" : "success",
+      downloadNoticeDuration(),
+    );
     return true;
   } catch (error) {
-    showToast("下载失败", error.message || "下载失败", "error", 0);
+    showToast(
+      "下载失败",
+      error.message || "下载失败",
+      "error",
+      downloadNoticeDuration(),
+    );
   } finally {
     link.style.pointerEvents = "";
     link.style.opacity = "";
@@ -1581,6 +1658,7 @@ function bindPageNavigationEvents() {
 document.addEventListener("DOMContentLoaded", function () {
   loadWebSettingsFromCache();
   applyWebSettings(webSettings);
+  bindSettingsTabs();
   bindAuthFloat();
   refreshAuthFloat();
   fetchWebSettings().finally(() => maybeAutoCheckUpdate());
@@ -3848,6 +3926,7 @@ async function openSystemConfig() {
       const el = document.getElementById(`cookie-${k}`);
       if (el) el.value = v;
     }
+    bindSettingsTabs();
     setAuthFloatLoggedIn(true);
     if (modal) modal.style.display = "flex";
   } catch (error) {
@@ -3870,6 +3949,10 @@ async function saveCookies() {
     downloadFilenameTemplate:
       document.getElementById("setting-download-filename-template")?.value ||
       "",
+    downloadTipDuration: parsePositiveInt(
+      document.getElementById("setting-download-tip-duration")?.value,
+      DEFAULT_DOWNLOAD_TIP_DURATION,
+    ),
     webdavEnabled: !!document.getElementById("setting-webdav-enabled")
       ?.checked,
     webdavUrl: document.getElementById("setting-webdav-url")?.value || "",
@@ -5333,6 +5416,8 @@ function setPlayButtonState(card, isPlaying) {
   icon.classList.remove("fa-play", "fa-stop");
   icon.classList.add(isPlaying ? "fa-stop" : "fa-play");
   btn.title = isPlaying ? "停止" : "播放";
+  btn.setAttribute("aria-label", isPlaying ? "停止" : "播放");
+  btn.classList.toggle("is-stop", isPlaying);
 }
 
 function syncAllPlayButtons() {
@@ -6248,7 +6333,7 @@ async function batchCopyDownloadUrls() {
       "下载地址已复制",
       `${scope}歌曲的下载链接已写入剪贴板，可直接粘贴到 aria2。`,
       "success",
-      BATCH_DOWNLOAD_NOTICE_MS,
+      downloadNoticeDuration(),
     );
   } catch (err) {
     showToast(
@@ -6291,7 +6376,7 @@ async function batchDownload() {
     "批量下载已开始",
     `正在保存 ${songs.length} 首歌曲${ignoredLocalText}，进度与结果请查看右侧“下载记录”。`,
     "info",
-    BATCH_DOWNLOAD_NOTICE_MS,
+    downloadNoticeDuration(),
   );
 
   let success = 0;
@@ -6329,7 +6414,7 @@ async function batchDownload() {
       failed > 0 ? "批量下载部分完成" : "批量下载完成",
       `${summary.join("，")}。详情请查看右侧“下载记录”。`,
       failed > 0 ? "warning" : "success",
-      BATCH_DOWNLOAD_NOTICE_MS,
+      downloadNoticeDuration(),
     );
 
     setDownloadRecordsButtonState("updated");

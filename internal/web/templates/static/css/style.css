@@ -339,6 +339,8 @@ body.batch-mode .song-card { padding-left: 10px; }
 .btn-circle { width: 36px; height: 36px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; text-decoration: none; position: relative; z-index: 10; font-size: 14px; }
 .btn-play { background: var(--primary-gradient); color: white; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); }
 .btn-play:hover { transform: scale(1.1); }
+.btn-play.is-stop { background: #ef4444; box-shadow: 0 4px 10px rgba(239, 68, 68, 0.3); }
+.btn-play.is-stop:hover { background: #dc2626; }
 .btn-dl { background: #f7fafc; color: var(--text-sub); border: 1px solid #e2e8f0; }
 .btn-dl:hover { border-color: #10b981; color: #10b981; }
 .btn-switch { background: var(--btn-switch-bg); color: var(--btn-switch-text); border: 1px solid var(--btn-switch-border); }
@@ -745,6 +747,93 @@ body.vg-open .aplayer.aplayer-fixed {
 .modal-close { cursor: pointer; color: #a0aec0; font-size: 20px; }
 .modal-close:hover { color: var(--error-color); }
 .modal-body { flex: 1; overflow-y: auto; }
+
+.settings-modal-overlay { padding: 20px; box-sizing: border-box; }
+.settings-modal {
+    width: min(760px, 100%);
+    max-width: 760px;
+    height: min(720px, calc(100vh - 40px));
+    max-height: calc(100vh - 40px);
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid #dcebe4;
+    border-radius: 18px;
+}
+.settings-modal .modal-header {
+    flex-shrink: 0;
+    align-items: flex-start;
+    padding: 20px 22px 16px;
+    margin: 0;
+    border-bottom: 1px solid #edf2f7;
+}
+.settings-modal .modal-header h3 { font-size: 18px; }
+.settings-modal-subtitle {
+    margin: 4px 0 0;
+    color: var(--text-sub);
+    font-size: 12px;
+    line-height: 1.45;
+}
+.settings-modal-body {
+    display: flex;
+    min-height: 0;
+    flex-direction: column;
+    padding: 14px 20px 18px;
+    overflow: hidden;
+}
+.settings-tabs {
+    display: flex;
+    flex-shrink: 0;
+    gap: 5px;
+    padding: 4px;
+    overflow-x: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: #f8fafc;
+    scrollbar-width: thin;
+}
+.settings-tab {
+    min-width: 112px;
+    flex: 1 0 auto;
+    padding: 9px 12px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    color: #64748b;
+    font: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+.settings-tab i { margin-right: 5px; }
+.settings-tab:hover { background: #ecfdf5; color: #047857; }
+.settings-tab.is-active { background: #fff; color: #047857; box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08); }
+.settings-tab:focus-visible { outline: 2px solid #10b981; outline-offset: 2px; }
+.settings-tab-panel {
+    flex: 1;
+    min-height: 0;
+    padding: 16px 4px 18px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+.settings-tab-panel .cookie-item:first-child { margin-top: 0; }
+.settings-panel-hint {
+    margin: 0 0 14px;
+    padding: 10px 12px;
+    border: 1px solid #d1fae5;
+    border-radius: 10px;
+    background: #f0fdf4;
+    color: #047857;
+    font-size: 12px;
+    line-height: 1.5;
+}
+.settings-save-bar {
+    flex-shrink: 0;
+    padding: 14px 4px 0;
+    border-top: 1px solid #edf2f7;
+}
+.settings-save-bar .btn-save { width: 100%; }
 
 .cookie-list { margin: 15px 0; }
 .cookie-item { margin-bottom: 15px; }
@@ -1315,6 +1404,10 @@ body.vg-open .aplayer.aplayer-fixed {
     z-index: 1000;
 }
 
+.aplayer.aplayer-fixed.aplayer-narrow .player-speed-wrap {
+    display: none !important;
+}
+
 .player-speed-btn {
     width: 52px;
     height: 28px;
@@ -1751,6 +1844,20 @@ body.karaoke-lyrics-active .aplayer .aplayer-lrc p.aplayer-lrc-current {
     .download-dir-control {
         grid-template-columns: 1fr;
     }
+    .settings-modal-overlay { padding: 12px; }
+    .settings-modal {
+        width: 100%;
+        max-width: 100%;
+        height: calc(100vh - 24px);
+        max-height: calc(100vh - 24px);
+        padding: 0;
+        border-radius: 16px;
+    }
+    .settings-modal .modal-header { padding: 16px 16px 13px; }
+    .settings-modal-body { padding: 12px 14px 14px; }
+    .settings-tab { min-width: 104px; padding: 8px 10px; font-size: 12px; }
+    .settings-tab-panel { padding: 14px 2px 16px; }
+    .settings-save-bar { padding: 12px 2px 0; }
     
     /* 🌟 手机端防误触：变成悬浮胶囊形态并大幅上移，彻底避开手势区！ */
     .aplayer.aplayer-fixed {
@@ -1819,7 +1926,4 @@ body.karaoke-lyrics-active .aplayer .aplayer-lrc p.aplayer-lrc-current {
     .karaoke-roma {
         font-size: 12px;
     }
-
-    
-
-
+}
