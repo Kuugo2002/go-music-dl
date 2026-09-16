@@ -116,11 +116,7 @@ func saveDownloadedSongToFile(result *DownloadedSong, outDir string) (*Downloade
 		return nil, errors.New("download result is nil")
 	}
 
-	targetDir := strings.TrimSpace(outDir)
-	if targetDir == "" {
-		targetDir = DefaultWebDownloadDir
-	}
-	targetDir = filepath.Clean(targetDir)
+	targetDir := DownloadDirOrDefault(outDir)
 
 	if err := os.MkdirAll(targetDir, 0755); err != nil {
 		return nil, err

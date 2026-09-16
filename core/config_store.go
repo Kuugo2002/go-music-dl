@@ -89,6 +89,23 @@ func ConfigDBPath() string {
 	return configDBPath()
 }
 
+// CloseConfigDB closes the shared settings database connection. Tests and
+// graceful shutdown use this to release the SQLite file handle.
+func CloseConfigDB() error {
+	if configDB == nil {
+		return nil
+	}
+	sqlDB, err := configDB.DB()
+	if err != nil {
+		return err
+	}
+	closeErr := sqlDB.Close()
+	configDB = nil
+	configInitErr = nil
+	configInit = sync.Once{}
+	return closeErr
+}
+
 func legacyCookieFilePath() string {
 	if path := strings.TrimSpace(os.Getenv("MUSIC_DL_COOKIE_FILE")); path != "" {
 		return path
