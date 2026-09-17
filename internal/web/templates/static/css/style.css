@@ -147,6 +147,18 @@ input[type="password"]:focus { border-color: #10b981; background: #fff; box-shad
 .source-checkbox:disabled + .source-card { opacity: 0.5; cursor: not-allowed; background: #f7fafc; border-color: #e2e8f0; }
 
 /* Results */
+.detail-back-row {
+    display: flex;
+    justify-content: flex-start;
+    margin: 0 0 10px;
+}
+.detail-back-button {
+    min-height: 34px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 13px;
+}
 .list-header {
     display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 10px 12px;
     background: rgba(255, 255, 255, 0.85); border: 1px solid #edf2f7; border-radius: 12px; box-shadow: var(--shadow); flex-wrap: wrap; 

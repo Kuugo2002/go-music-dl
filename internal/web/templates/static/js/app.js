@@ -1403,6 +1403,14 @@ function scrollToSearchResults() {
   });
 }
 
+function navigateBack() {
+  if (window.history.length > 1) {
+    window.history.back();
+    return;
+  }
+  void navigateTo(API_ROOT + "/");
+}
+
 async function navigateTo(url, options = {}) {
   let targetURL;
   try {
